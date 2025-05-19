@@ -187,19 +187,19 @@ def load_data():
         ]
     )
 
-    # Generation de la matrice de correlation
-    correlation_matrix = df_value_only.corr(method="pearson")
+    # Génération de la Matrice de corrélation
+    corr = df_value_only.corr()
 
     # Affichage de la matrice de correlation
     st.write("Matrice de corrélation :")
-    st.write(correlation_matrix)
+    st.write(corr)
 
     # Clustering
-    link = linkage(correlation_matrix, method="average")  # ou 'ward'
+    link = linkage(corr, method="average")  # ou 'ward'
     idx = leaves_list(link)  # indices ordonnés
 
     # Réordonner la matrice
-    corr_reordered = correlation_matrix.iloc[idx, idx]
+    corr_reordered = corr.iloc[idx, idx]
 
     # Conversion pour export
     corr_reordered_long = corr_reordered.reset_index().melt(id_vars="index")
