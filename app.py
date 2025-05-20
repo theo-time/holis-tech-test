@@ -23,6 +23,8 @@ page = st.sidebar.radio(
     "Aller à :", ["Accueil", "Impacts par procédé", "Comparatif procédé", "À propos"]
 )
 
+page_comparatif(df_meta, df_impacts, df_cat)
+
 # # Page: Accueil
 # if page == "Accueil":
 #     st.title("Bienvenue dans le Dashboard Empreinte")

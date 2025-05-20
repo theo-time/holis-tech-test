@@ -39,8 +39,9 @@ def page_comparatif(df_meta, df_impacts, df_cat):
 
     category_tree = build_category_tree(df_meta)
 
-    # with open("arbre_categories.json", "w", encoding="utf-8") as f:
-    #     json.dump(category_tree, f, ensure_ascii=False, indent=2)
+    with open("arbre_categories.json", "w", encoding="utf-8") as f:
+        json.dump(category_tree, f, ensure_ascii=False, indent=2)
+
     df_export = df_meta[
         [
             "Categorie_niv_1",

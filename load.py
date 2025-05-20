@@ -128,7 +128,24 @@ def create_group_tables(df):
         .reset_index(name="count")
         .sort_values("count", ascending=False)
     )
-    return unit_table, geo_table
+
+    # 3. Répartition catégorie + Type de dataset
+    dataset_table = (
+        df.groupby(
+            [
+                "Categorie_niv_1",
+                "Categorie_niv_2",
+                "Categorie_niv_3",
+                "Categorie_niv_4",
+                "Type de dataset",
+            ]
+        )
+        .size()
+        .reset_index(name="count")
+        .sort_values("count", ascending=False)
+    )
+
+    return unit_table, geo_table, dataset_table
 
 
 # Configuration de la page
@@ -142,6 +159,11 @@ def load_data():
     # Metadonnées
     df_meta = read_excel_with_dual_headers("data/BI_2.02__02_Procedes_Details.xlsx")
     df_meta["UUID"] = df_meta["UUID"].str.strip()  # Supprime les espaces en début/fin
+
+    # Trims de toutes les colonnes de type string
+    for col in df_meta.select_dtypes(include=["object"]).columns:
+        df_meta[col] = df_meta[col].str.strip()
+
     df_meta.rename(
         columns={
             "Catégorisation (niveau 1)": "Categorie_niv_1",
@@ -152,6 +174,12 @@ def load_data():
         inplace=True,
     )
 
+    # Export de la liste des colonnes en json
+
+    with open("export/columns_meta_procedes.txt", "w", encoding="utf-8") as f:
+        for col in df_meta.columns:
+            f.write(col + "\n")
+
     # Impacts
     df_impacts, df_impacts_large = load_impacts("data/BI_2.02__03_Procedes_Impacts.csv")
 
@@ -161,6 +189,11 @@ def load_data():
     # Catégories d'impacts
     df_cat = read_excel_with_dual_headers("data/BI_2.02__06_CatImpacts_Details.xlsx")
     df_cat.rename(columns={"UUID": "UUID_cat"}, inplace=True)
+
+    # Trims de toutes les colonnes de type string
+    for col in df_cat.select_dtypes(include=["object"]).columns:
+        df_cat[col] = df_cat[col].str.strip()
+
     df_cat["UUID_cat"] = df_cat[
         "UUID_cat"
     ].str.strip()  # Supprime les espaces en début/fin
@@ -178,6 +211,7 @@ def load_data():
                 "Quantité de référence",
                 "Unité",
                 "Zone géographique",
+                "Type de dataset",
             ]
         ],
         left_on="UUID_procede",
@@ -304,20 +338,27 @@ def load_data():
 
     # Analyse Zones géo / unités --------------------------------
 
-    unit_table, geo_table = create_group_tables(df_meta)
+    unit_table, geo_table, dataset_table = create_group_tables(df_meta)
 
     # Liste des unités distinctes (sans doublons, triée)
     unit_list = df_meta["Unité"].dropna().unique()
     unit_list = sorted(set(unit_list))
     unit_list = pd.DataFrame(unit_list, columns=["Unité"])
 
+    # Liste des types de datasets distincts (sans doublons, triée)
+    datasets_list = df_meta["Type de dataset"].dropna().unique()
+    datasets_list = sorted(set(datasets_list))
+    datasets_list = pd.DataFrame(datasets_list, columns=["Type de dataset"])
+
     # display tables
-    st.write("Tableau de répartition par catégorie + unité + quantité de référence")
-    st.write(unit_table)
+    st.write("datasets_list")
+    st.write(datasets_list)
     st.write("Tableau de répartition par catégorie + zone géographique")
     st.write(geo_table)
-
-    generate_tables_pays(df_im)
+    st.write("Tableau de répartition par catégorie + unité + quantité de référence")
+    st.write(unit_table)
+    st.write("Tableau de répartition par catégorie + Type de dataset")
+    st.write(dataset_table)
 
     # Export des tables
     df_im.to_json(
@@ -328,6 +369,9 @@ def load_data():
     )
     unit_list.to_json("export/unit_list.json", orient="records", force_ascii=False)
     unit_table.to_json("export/unit_table.json", orient="records", force_ascii=False)
+    datasets_list.to_json(
+        "export/datasets_list.json", orient="records", force_ascii=False
+    )
     geo_table.to_json("export/geo_table.json", orient="records", force_ascii=False)
 
     return df_meta, df_impacts, df_cat
